@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Album Preview | Vinyl Player</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            cursor: pointer;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            
+            /* Background Image (No Filters) */
+            background-image: url('mainbg.gif');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        /* Welcome Screen Styling */
+        #welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 24px;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+
+        #turntable {
+            width: 400px;
+            height: 400px;
+            background-color: #333;
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            /* Full opacity */
+            opacity: 1;
+        }
+
+        #record {
+            width: 350px;
+            height: 350px;
+            background-color: transparent;
+            border-radius: 50%;
+            border: none;                
+            background-image: 
+                url('mainart.png'),
+                radial-gradient(circle, #000 50%, transparent 50%);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            /* Full opacity */
+            opacity: 1;
+            transition: transform 0.2s linear;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="welcome-screen">
+        <p>click anywhere to enter</p>
+    </div>
+
+    <div id="turntable">
+        <div id="record"></div>
+    </div>
+
+    <audio id="player" src="track1.m4a"></audio>
+
+    <script>
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const record = document.getElementById('record');
+        const player = document.getElementById('player');
+        
+        // Ambient Sound Setup
+        const ambientFile = 'ambient.wav';
+        const volumeLevel = 0.4;
+        
+        let ambient1 = new Audio(ambientFile);
+        let ambient2 = new Audio(ambientFile);
+        ambient1.volume = volumeLevel;
+        ambient2.volume = volumeLevel;
+        ambient1.loop = false;
+        ambient2.loop = false;
+
+        function playSeamlessAmbient() {
+            ambient1.play();
+            
+            // Overlap logic for seamless looping
+            ambient1.addEventListener('timeupdate', function() {
+                if (this.currentTime > this.duration - 0.5) {
+                    ambient2.play();
+                    this.removeEventListener('timeupdate', arguments.callee);
+                }
+            });
+            
+            ambient1.addEventListener('ended', function() {
+                // Swap players
+                let temp = ambient1;
+                ambient1 = ambient2;
+                ambient2 = temp;
+                
+                ambient2.currentTime = 0;
+                ambient1.play();
+                
+                // Re-add the listener for the new ambient1
+                ambient1.addEventListener('timeupdate', function() {
+                    if (this.currentTime > this.duration - 0.5) {
+                        ambient2.play();
+                        this.removeEventListener('timeupdate', arguments.callee);
+                    }
+                });
+            });
+        }
+
+        // Logic for welcoming and starting audio
+        document.body.addEventListener('click', () => {
+            if (welcomeScreen.style.display !== 'none') {
+                welcomeScreen.style.opacity = '0';
+                setTimeout(() => {
+                    welcomeScreen.style.display = 'none';
+                }, 500);
+                
+                playSeamlessAmbient();
+            }
+        });
+
+        // Toggle music on record click
+        let currentRotation = 0;
+        let animationFrameId;
+
+        function animateRotation() {
+            if (!player.paused) {
+                currentRotation += 0.5; // Adjusted speed
+                record.style.transform = `rotate(${currentRotation}deg)`;
+                animationFrameId = requestAnimationFrame(animateRotation);
+            }
+        }
+
+        record.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            if (player.paused) {
+                player.play();
+                animateRotation(); // Start JS animation
+            } else {
+                player.pause();
+                cancelAnimationFrame(animationFrameId); // Stop JS animation
+            }
+        });
+    </script>
+
+</body>
+</html>
